@@ -5,9 +5,60 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>Walkable 3D Town – Root&Render</title>
   <link rel="stylesheet" href="styles.css?v=3" />
-  <!-- Three.js + PointerLockControls -->
-  <script src="https://unpkg.com/three@0.165.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.165.0/examples/js/controls/PointerLockControls.js"></script>
+ <!-- Bootloader: ensures THREE is loaded (with fallback) before your app -->
+<script>
+(function () {
+  const dbg = document.getElementById('dbg');
+  function log(s){ if(dbg) dbg.textContent = s; }
+
+  function loadScript(src){
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = false;           // preserve order
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function start() {
+    try {
+      // Try unpkg first
+      try {
+        await loadScript('https://unpkg.com/three@0.165.0/build/three.min.js');
+      } catch (e) {
+        // Fallback to jsDelivr if unpkg blocked
+        await loadScript('https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js');
+      }
+
+      // PointerLockControls (depends on THREE)
+      try {
+        await loadScript('https://unpkg.com/three@0.165.0/examples/js/controls/PointerLockControls.js');
+      } catch (e) {
+        await loadScript('https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/PointerLockControls.js');
+      }
+
+      // Finally load your app (bump query to bust cache)
+      await loadScript('main_v3.js?v=5');
+
+      if (window.THREE) {
+        log((/coarse/.test((window.matchMedia && matchMedia('(pointer: coarse)').media) || '') || 'ontouchstart' in window || (navigator.maxTouchPoints||0)>0)
+          ? 'mode: mobile • v3'
+          : 'mode: desktop • v3');
+      }
+    } catch (err) {
+      log('ERR loading libs: ' + String(err.message).slice(0, 80));
+    }
+  }
+
+  start();
+})();
+</script>
+  
+
+
+
 </head>
 <body>
   <!-- Instruction overlay -->
@@ -45,6 +96,6 @@
   };
 })();
 </script>
-  <script src="main_v3.js?v=3"></script>
+
 </body>
 </html>
