@@ -1,81 +1,56 @@
-/* Root&Render aesthetic styles */
+/* minimal, nature-y */
 html, body {
-  margin: 0;
   height: 100%;
+  margin: 0;
   overflow: hidden;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  /* Soft earth and sky tones */
   background: linear-gradient(#f6f0e6, #e0f7fa);
 }
-
 #scene {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: block;
 }
 
+/* Overlay */
 .overlay {
   position: absolute;
   top: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.8);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  background: rgba(255,255,255,0.9);
+  padding: .75rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15);
   z-index: 10;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
   user-select: none;
-  text-align: center;
 }
 
+/* Touch UI */
 #touch-ui {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: absolute; inset: 0;
   pointer-events: none;
 }
-
 #stick-left, #look-right {
-  position: absolute;
-  bottom: 2rem;
-  width: 42vw;
-  height: 42vw;
-  max-width: 220px;
-  max-height: 220px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  position: absolute; bottom: 2.25rem;
+  width: 42vw; height: 42vw; max-width: 220px; max-height: 220px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.15);
   backdrop-filter: blur(6px);
   pointer-events: auto;
-  touch-action: none;
+  touch-action: none;  /* prevent scroll/zoom */
+  z-index: 5;
 }
-
-#stick-left {
-  left: 1rem;
-}
-
+#stick-left { left: 1rem; }
 #stick-left .knob {
-  position: absolute;
-  width: 35%;
-  height: 35%;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%,-50%);
+  width: 35%; height: 35%; border-radius: 999px;
+  background: rgba(255,255,255,0.35);
 }
+#look-right { right: 1rem; }
 
-#look-right {
-  right: 1rem;
-}
-
-/* Hide mobile controls on desktop */
+/* Hide touch UI on desktop pointers (mouse/trackpad) */
 @media (hover: hover) and (pointer: fine) {
-  #touch-ui {
-    display: none;
-  }
+  #touch-ui { display: none; }
 }
