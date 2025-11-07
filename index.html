@@ -30,6 +30,21 @@
 
   <canvas id="scene"></canvas>
   <!-- IMPORTANT: new filename + ?v=3 to bust cache -->
+  <script>
+(function () {
+  var dbg = document.getElementById('dbg');
+  // Heuristic without UA:
+  var coarse   = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  var mobile   = !!(coarse || hasTouch);
+  if (dbg) dbg.textContent = 'preflight: ' + (mobile ? 'mobile' : 'desktop') + ' • html';
+
+  // If any JS error happens, show it on the badge
+  window.onerror = function (msg, src, line, col) {
+    if (dbg) dbg.textContent = 'ERR: ' + String(msg).slice(0, 60);
+  };
+})();
+</script>
   <script src="main_v3.js?v=3"></script>
 </body>
 </html>
