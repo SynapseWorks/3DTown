@@ -1,0 +1,81 @@
+/* Root&Render aesthetic styles */
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  /* Soft earth and sky tones */
+  background: linear-gradient(#f6f0e6, #e0f7fa);
+}
+
+#scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.overlay {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  user-select: none;
+  text-align: center;
+}
+
+#touch-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#stick-left, #look-right {
+  position: absolute;
+  bottom: 2rem;
+  width: 42vw;
+  height: 42vw;
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#stick-left {
+  left: 1rem;
+}
+
+#stick-left .knob {
+  position: absolute;
+  width: 35%;
+  height: 35%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#look-right {
+  right: 1rem;
+}
+
+/* Hide mobile controls on desktop */
+@media (hover: hover) and (pointer: fine) {
+  #touch-ui {
+    display: none;
+  }
+}
