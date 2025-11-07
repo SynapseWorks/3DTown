@@ -1,12 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Walkable 3D Town – Root&Render</title>
-  <!-- Root&Render: natural aesthetics and sunlight coding ethos -->
-  <link rel="stylesheet" href="styles.css">
-  <!-- Three.js core and PointerLockControls (CDN) -->
+  <link rel="stylesheet" href="styles.css?v=2" />
+  <!-- Three.js + PointerLockControls -->
   <script src="https://unpkg.com/three@0.165.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.165.0/examples/js/controls/PointerLockControls.js"></script>
 </head>
@@ -16,17 +15,18 @@
     <h1>Walkable 3D Town</h1>
     <p>
       Desktop: Click to start • Arrow keys move • Mouse look<br>
-      Mobile: Tap to start • Left pad moves • Right pad looks<br>
-      Welcome to our Root&Render town, inspired by nature and sunlight coding.
+      Mobile: Tap to start • Left pad moves • Right pad looks
     </p>
   </div>
-  <!-- Touch controls: hidden on desktop via CSS -->
+
+  <!-- Touch controls (hidden on desktop via CSS) -->
   <div id="touch-ui">
     <div id="stick-left"><div class="knob"></div></div>
     <div id="look-right"></div>
   </div>
-  <!-- Canvas for Three.js rendering -->
+
   <canvas id="scene"></canvas>
-  <script src="main_updated.js"></script>
+  <!-- IMPORTANT: new filename + version to defeat cache -->
+  <script src="main.v2.js?v=2"></script>
 </body>
 </html>
