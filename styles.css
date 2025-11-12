@@ -5,6 +5,7 @@ html, body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   background: linear-gradient(#f6f0e6, #e0f7fa);
 }
+
 #scene { position: absolute; inset: 0; display: block; }
 
 /* Overlay */
@@ -16,90 +17,63 @@ html, body {
   z-index: 10; user-select: none;
 }
 
-/* Touch UI (visible on mobile, hidden via JS on desktop) */
-#touch-ui { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
-#stick-left, #look-right {
-  position: absolute; bottom: 2.25rem;
-  width: 42vw; height: 42vw; max-width: 220px; max-height: 220px;
-  border-radius: 999px; background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(6px);
-  pointer-events: auto; touch-action: none;
-}
-#stick-left { left: 1rem; }
-#stick-left .knob {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
-  width: 35%; height: 35%; border-radius: 999px; background: rgba(255,255,255,0.35);
-}
-#look-right { right: 1rem; }
-
 /* Debug badge */
 #dbg {
-  position: absolute; right: .5rem; top: .5rem; z-index: 20;
+  position: absolute; right: .5rem; top: .5rem; z-index: 30;
   background: rgba(0,0,0,.55); color: #fff; font-size: 12px;
   padding: .25rem .5rem; border-radius: 6px; user-select: none;
 }
-/* Mobile buttons (hidden on desktop) */
-.mobile-btn {
-  position: absolute;
-  bottom: 2.5rem;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  border: none;
-  font-size: 12px;
-  font-weight: bold;
-  color: #222;
-  background: rgba(255,255,255,0.6);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  z-index: 8;
-  touch-action: none;
-}
-#jump-btn   { right: 1rem; }
-#night-btn  { right: 5.5rem; }
-#flash-btn  { right: 10rem; }
 
+/* Touch UI container never grabs events; children do */
+#touch-ui { position: fixed; inset: 0; pointer-events: none; z-index: 20; }
 
-
-/* Ensure the overlay container itself doesn't block touches, but its children do */
-#touch-ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
-
-/* LEFT stick (unchanged positioning, but allow touch) */
+/* LEFT stick */
 #stick-left {
   position: absolute; left: 1rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
   width: 42vw; max-width: 240px; height: 42vw; max-height: 240px;
-  border-radius: 999px; background: radial-gradient(closest-side, rgba(255,255,255,.18), rgba(255,255,255,.06));
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(255,255,255,.18), rgba(255,255,255,.06));
   backdrop-filter: blur(6px);
-  pointer-events: auto;
+  pointer-events: auto; /* enable touches */
+  touch-action: none;
 }
 #stick-left .knob {
-  position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px;
-  border-radius: 999px; background: rgba(255,255,255,.7); box-shadow: 0 4px 10px rgba(0,0,0,.2);
+  position: absolute; left: 50%; top: 50%;
+  width: 84px; height: 84px; margin: -42px 0 0 -42px;
+  border-radius: 999px; background: rgba(255,255,255,.7);
+  box-shadow: 0 4px 10px rgba(0,0,0,.2);
 }
 
-/* RIGHT look pad — shift left to make space for buttons (5.5rem) */
+/* RIGHT look pad — shifted left to leave room for buttons */
 #look-right {
   position: absolute; right: 6.5rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
   width: 42vw; max-width: 260px; height: 42vw; max-height: 260px;
-  border-radius: 18px; background: radial-gradient(closest-side, rgba(255,255,255,.12), rgba(255,255,255,.04));
+  border-radius: 18px;
+  background: radial-gradient(closest-side, rgba(255,255,255,.12), rgba(255,255,255,.04));
   backdrop-filter: blur(6px);
-  pointer-events: auto;
+  pointer-events: auto; /* enable touches */
+  touch-action: none;
 }
 
-/* Buttons column on the far right, above the look pad */
+/* Buttons column on far right, above look pad */
 #mobile-buttons {
   position: absolute; right: 1rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
-  display: flex; flex-direction: column; gap: .75rem; pointer-events: auto; z-index: 20;
+  display: flex; flex-direction: column; gap: .75rem;
+  pointer-events: auto; z-index: 25;
 }
+
+/* Button styling */
 .mobile-btn {
   width: 56px; height: 56px; border-radius: 999px; border: none;
   font: 700 12px/1 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue";
-  color: #1b1b1b; background: rgba(255,255,255,.75);
-  box-shadow: 0 6px 16px rgba(0,0,0,.25); touch-action: manipulation;
+  color: #1b1b1b; background: rgba(255,255,255,.85);
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+  touch-action: manipulation;
 }
+.mobile-btn:active { transform: scale(0.98); }
 .mobile-btn.active { background: #ffe082; }
 
-/* Desktop hides the touch UI */
+/* Hide touch UI on desktop */
 @media (hover: hover) and (pointer: fine) {
-  #touch-ui { display:none; }
+  #touch-ui { display: none; }
 }
-
