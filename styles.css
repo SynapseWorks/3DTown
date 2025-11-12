@@ -58,6 +58,48 @@ html, body {
 #night-btn  { right: 5.5rem; }
 #flash-btn  { right: 10rem; }
 
-@media (hover: hover) and (pointer: fine) {
-  .mobile-btn { display: none; }
+
+
+/* Ensure the overlay container itself doesn't block touches, but its children do */
+#touch-ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+/* LEFT stick (unchanged positioning, but allow touch) */
+#stick-left {
+  position: absolute; left: 1rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  width: 42vw; max-width: 240px; height: 42vw; max-height: 240px;
+  border-radius: 999px; background: radial-gradient(closest-side, rgba(255,255,255,.18), rgba(255,255,255,.06));
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
 }
+#stick-left .knob {
+  position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px;
+  border-radius: 999px; background: rgba(255,255,255,.7); box-shadow: 0 4px 10px rgba(0,0,0,.2);
+}
+
+/* RIGHT look pad — shift left to make space for buttons (5.5rem) */
+#look-right {
+  position: absolute; right: 6.5rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  width: 42vw; max-width: 260px; height: 42vw; max-height: 260px;
+  border-radius: 18px; background: radial-gradient(closest-side, rgba(255,255,255,.12), rgba(255,255,255,.04));
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+/* Buttons column on the far right, above the look pad */
+#mobile-buttons {
+  position: absolute; right: 1rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  display: flex; flex-direction: column; gap: .75rem; pointer-events: auto; z-index: 20;
+}
+.mobile-btn {
+  width: 56px; height: 56px; border-radius: 999px; border: none;
+  font: 700 12px/1 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue";
+  color: #1b1b1b; background: rgba(255,255,255,.75);
+  box-shadow: 0 6px 16px rgba(0,0,0,.25); touch-action: manipulation;
+}
+.mobile-btn.active { background: #ffe082; }
+
+/* Desktop hides the touch UI */
+@media (hover: hover) and (pointer: fine) {
+  #touch-ui { display:none; }
+}
+
