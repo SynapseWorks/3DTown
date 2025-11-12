@@ -15,6 +15,25 @@ const btnJump  = document.getElementById("jump-btn");
 const btnNight = document.getElementById("night-btn");
 const btnFlash = document.getElementById("flash-btn");
 
+// helper so button taps don't bubble into look-right
+function eat(e){ e.preventDefault(); e.stopPropagation(); }
+
+function bindButton(el, handler){
+  if (!el) return;
+  el.addEventListener('touchstart', eat, {passive:false});
+  el.addEventListener('touchend',   eat, {passive:false});
+  el.addEventListener('click',      (e)=>{ eat(e); handler(); });
+}
+
+// visual toggle helpers
+function toggleClass(el, on){ if (!el) return; el.classList.toggle('active', !!on); }
+
+// wire up buttons
+bindButton(btnJump,  () => { if (onGround){ verticalVelocity = JUMP_SPEED; onGround = false; } });
+bindButton(btnNight, () => { toggleNight(); toggleClass(btnNight, nightMode); });
+bindButton(btnFlash, () => { toggleFlashlight(); toggleClass(btnFlash, flashlightOn); });
+
+
 // ---------- Device detection ----------
 const isCoarse = window.matchMedia && matchMedia("(pointer: coarse)").matches;
 const hasTouch = "ontouchstart" in window || (navigator.maxTouchPoints || 0) > 0;
