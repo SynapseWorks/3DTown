@@ -7,12 +7,11 @@
   <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
-  <!-- Instruction overlay -->
   <div id="ui" class="overlay" role="dialog">
     <h1>Walkable 3D Town</h1>
     <p>
-      Desktop: Click to start • Arrow keys move • Mouse look<br>
-      Mobile: Tap to start • Left pad moves • Right pad looks
+      Desktop: Click to start • Arrow keys move • Space jumps • N toggles night • F toggles flashlight<br>
+      Mobile: Tap to start • Left pad moves • Right pad looks • Jump/Night/Light buttons below
     </p>
   </div>
 
@@ -20,16 +19,17 @@
   <div id="touch-ui">
     <div id="stick-left"><div class="knob"></div></div>
     <div id="look-right"></div>
+    <button id="jump-btn" class="mobile-btn">Jump</button>
+    <button id="night-btn" class="mobile-btn">Night</button>
+    <button id="flash-btn" class="mobile-btn">Light</button>
   </div>
 
-  <!-- Debug badge -->
-  <div id="dbg">mode: ? • v3</div>
-
+  <div id="dbg">mode: ? • v7</div>
   <canvas id="scene"></canvas>
 
-  <!-- Load libs from jsDelivr -->
-  <script src="https://cdn.jsdelivr.net/npm/three/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/PointerLockControls.js"></script>
-  <script src="main_v3.js?v=4"></script>
+  <script src="libs/three.min.js?v=7"></script>
+  <script src="libs/PointerLockControls.js?v=7"></script>
+  <script src="main_v7.js?v=7"></script>
 </body>
+
 </html>
