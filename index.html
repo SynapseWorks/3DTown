@@ -15,14 +15,18 @@
     </p>
   </div>
 
-  <!-- Touch controls -->
-  <div id="touch-ui">
-    <div id="stick-left"><div class="knob"></div></div>
-    <div id="look-right"></div>
-    <button id="jump-btn" class="mobile-btn">Jump</button>
+ <!-- Touch controls -->
+<div id="touch-ui" aria-hidden="true">
+  <div id="stick-left"><div class="knob"></div></div>
+  <div id="look-right"></div>
+
+  <!-- NEW: buttons stacked on the right -->
+  <div id="mobile-buttons">
+    <button id="jump-btn"  class="mobile-btn">Jump</button>
     <button id="night-btn" class="mobile-btn">Night</button>
     <button id="flash-btn" class="mobile-btn">Light</button>
   </div>
+</div>
 
   <div id="dbg">mode: ? • v7</div>
   <canvas id="scene"></canvas>
