@@ -1,7 +1,7 @@
 /* global THREE */
 // ========= Walkable 3D Town — main_v7.js =========
 
-const VERSION = "v7.5";
+const VERSION = "v7.6";
 
 // --- debug badge catches any runtime error so builders don’t fail silently ---
 const dbg = document.getElementById("dbg");
@@ -40,7 +40,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 // ---------- Day/Night palette ----------
 let nightMode    = false;
 let flashlightOn = false;
-const SKY_DAY      = 0+cfefff;
+const SKY_DAY      = 0xcfefff;   // <-- fixed hex literal
 const SKY_NIGHT    = 0x050b14;
 const GROUND_DAY   = 0x87b86a;
 const GROUND_NIGHT = 0x1c3a33;
@@ -86,24 +86,22 @@ if (!isMobile) {
 }
 scene.add(sun);
 
-// Flashlight — ATTACHED TO CAMERA so it always follows view
+// ---------- Flashlight — ATTACHED TO CAMERA ----------
 const flash = new THREE.SpotLight(0xffffff, 0, 28, Math.PI / 6, 0.5, 1.4);
 const flashTarget = new THREE.Object3D();
 flashTarget.position.set(0, 0, -5); // 5 units forward from camera
 camera.add(flash);
 camera.add(flashTarget);
 flash.target = flashTarget;
-// (Don’t add flash directly to scene; it inherits via camera’s scene membership)
 
 // ---------- Town Builders ----------
-const HOUSE_Y = 0; // ground
+const HOUSE_Y = 0;
 const houses = [];
 
 function makeHouse({ x, z, w = 4, d = 4, h = 2.6, color = 0xe5d3b3, roofColor = 0x9b6a6c }) {
   const g = new THREE.Group();
   g.position.set(x, HOUSE_Y, z);
 
-  // Body
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(w, h, d),
     new THREE.MeshStandardMaterial({ color })
@@ -113,7 +111,6 @@ function makeHouse({ x, z, w = 4, d = 4, h = 2.6, color = 0xe5d3b3, roofColor = 
   body.position.y = h / 2;
   g.add(body);
 
-  // Roof
   const roof = new THREE.Mesh(
     new THREE.ConeGeometry(Math.max(w, d) * 0.75, Math.max(h * 0.8, 2), 4),
     new THREE.MeshStandardMaterial({ color: roofColor })
@@ -123,7 +120,6 @@ function makeHouse({ x, z, w = 4, d = 4, h = 2.6, color = 0xe5d3b3, roofColor = 
   roof.rotation.y = Math.PI * 0.25;
   g.add(roof);
 
-  // Door indicator (front = +z face)
   const door = new THREE.Mesh(
     new THREE.PlaneGeometry(1.6, 2.0),
     new THREE.MeshStandardMaterial({ color: 0x6b4f3a })
@@ -131,12 +127,11 @@ function makeHouse({ x, z, w = 4, d = 4, h = 2.6, color = 0xe5d3b3, roofColor = 
   door.position.set(0, 1.0, d / 2 + 0.01);
   g.add(door);
 
-  // Footprint AABB + door width
   g.userData.aabb = {
     min: new THREE.Vector3(x - w / 2, 0, z - d / 2),
     max: new THREE.Vector3(x + w / 2, 0, z + d / 2)
   };
-  g.userData.doorWidth = 1.6; // centered on +z
+  g.userData.doorWidth = 1.6;
 
   scene.add(g);
   houses.push(g);
@@ -172,7 +167,7 @@ function makePath(x, z, w, d) {
   scene.add(m);
 }
 
-// Build a small town
+// Build town
 try {
   makeHouse({ x: 10,  z: -5,  color: 0xd8e2dc });
   makeHouse({ x: -8,  z: -12, color: 0xffe5d9 });
@@ -193,23 +188,21 @@ try {
 // ---------- Player Rig & Controls ----------
 let controls;      // desktop pointer lock
 let yaw, pitch;    // mobile rig
-let playerObject;  // THREE.Object3D to move (controls.getObject() or yaw)
+let playerObject;  // controls.getObject() or yaw
 const EYE_HEIGHT = 1.6;
 
-// Movement state
 const moveKeys = { fwd: 0, right: 0 };
 let verticalVelocity = 0;
 let onGround = true;
 const JUMP_SPEED = 6.0;
 const GRAVITY    = 15.0;
 
-// Desktop controls
+// Desktop
 if (!isMobile) {
   controls = new THREE.PointerLockControls(camera, document.body);
   scene.add(controls.getObject());
   playerObject = controls.getObject();
 
-  // Start a little farther back and look toward town center
   playerObject.position.set(0, EYE_HEIGHT, 18);
   camera.lookAt(0, EYE_HEIGHT, 0);
 
@@ -223,28 +216,25 @@ if (!isMobile) {
   pitch = new THREE.Object3D();
   yaw.add(pitch);
   pitch.add(camera);
-  camera.position.set(0, EYE_HEIGHT, 0); // eye height is camera's local Y
+  camera.position.set(0, EYE_HEIGHT, 0);
   playerObject = yaw;
   scene.add(yaw);
 
-  // Start a little farther back and face toward town center
   yaw.position.set(0, 0, 18);
   yaw.lookAt(new THREE.Vector3(0, 0, 0));
 
-  // Tap to start HUD
   document.body.addEventListener("click", () => {
     if (ui) ui.style.display = "none";
     if (touch) touch.style.display = "block";
   }, { passive: true });
 }
 
-// ---------- UI state helper ----------
+// ---------- UI helpers ----------
 function updateUI() {
   if (btnNight) btnNight.classList.toggle('active', nightMode);
   if (btnFlash) btnFlash.classList.toggle('active', flashlightOn);
 }
 
-// ---------- Touch-safe button binding ----------
 function eat(e){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); }
 function bindButton(el, handler){
   if (!el) return;
@@ -260,9 +250,9 @@ bindButton(btnFlash, () => { flashlightOn = !flashlightOn; applyFlash(); updateU
 // ---------- Mobile Joystick + Look ----------
 const stickState = { active: false, startX: 0, startY: 0 };
 const lookState  = { active: false, lastX: 0, lastY: 0 };
-const JOY_MAX    = 36;         // clamp knob travel
-const JOY_SPEED  = 6.0;        // m/s when joystick fully deflected
-const LOOK_SENS  = 0.0025;     // swipe sensitivity
+const JOY_MAX    = 36;
+const JOY_SPEED  = 6.0;
+const LOOK_SENS  = 0.0025;
 const PITCH_CLAMP = Math.PI * 0.48;
 let joyVec = new THREE.Vector2(0, 0);
 
@@ -270,10 +260,9 @@ function touchPos(ev) {
   const t = ev.touches ? ev.touches[0] : ev;
   return { x: t.clientX, y: t.clientY };
 }
-function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+function clamp(v, mn, mx) { return Math.max(mn, Math.min(mx, v)); }
 
 if (isMobile && stick && knob && look) {
-  // movement stick
   const onStickStart = (e) => {
     e.preventDefault(); e.stopPropagation();
     const p = touchPos(e);
@@ -289,13 +278,12 @@ if (isMobile && stick && knob && look) {
     const dx = p.x - stickState.startX;
     const dy = p.y - stickState.startY;
     const len = Math.hypot(dx, dy);
-    const angle = Math.atan2(dy, dx);
-    const radius = Math.min(len, JOY_MAX);
-    const kx = Math.cos(angle) * radius;
-    const ky = Math.sin(angle) * radius;
+    const ang = Math.atan2(dy, dx);
+    const rad = Math.min(len, JOY_MAX);
+    const kx = Math.cos(ang) * rad;
+    const ky = Math.sin(ang) * rad;
     knob.style.transform = `translate(${kx}px, ${ky}px)`;
-    // Invert Y so UP = forward, DOWN = backward
-    joyVec.set(kx / JOY_MAX, -ky / JOY_MAX).clampScalar(-1, 1);
+    joyVec.set(kx / JOY_MAX, -ky / JOY_MAX).clampScalar(-1, 1); // up = forward
   };
   const onStickEnd = (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -307,7 +295,6 @@ if (isMobile && stick && knob && look) {
   stick.addEventListener("touchmove",  onStickMove,  { passive: false });
   stick.addEventListener("touchend",   onStickEnd,   { passive: false });
 
-  // look area (natural mapping: right->right, up->up)
   const onLookStart = (e) => {
     e.preventDefault(); e.stopPropagation();
     const p = touchPos(e);
@@ -348,7 +335,7 @@ function applyFlash() {
   flash.intensity = flashlightOn ? 2.2 : 0;
 }
 
-// ---------- Keyboard (desktop + mobile external keyboards) ----------
+// ---------- Keyboard ----------
 window.addEventListener("keydown", (e) => {
   if (e.code === "KeyN") { e.preventDefault(); nightMode = !nightMode; applyNight(); updateUI(); }
   if (e.code === "KeyF") { e.preventDefault(); flashlightOn = !flashlightOn; applyFlash(); updateUI(); }
@@ -385,10 +372,8 @@ function animate() {
   const dt = Math.min((t1 - t0) / 1000, 0.05);
   t0 = t1;
 
-  // gentle water bob
   water.position.y = 0.05 + Math.sin(t1 * 0.0012) * 0.02;
 
-  // horizontal movement
   if (!isMobile) {
     const canMove = !!(document.pointerLockElement || document.mozPointerLockElement);
     if (canMove) {
@@ -406,8 +391,7 @@ function animate() {
     }
   }
 
-  // vertical (jump/gravity) — separate floors
-  const floorY = isMobile ? 0 : EYE_HEIGHT; // mobile rig sits at y=0; desktop object equals eye height
+  const floorY = isMobile ? 0 : EYE_HEIGHT;
   if (!onGround || verticalVelocity > 0) {
     verticalVelocity -= GRAVITY * dt;
     let newY = playerObject.position.y + verticalVelocity * dt;
@@ -419,8 +403,7 @@ function animate() {
     playerObject.position.y = newY;
   }
 
-  // (No need to manually update flashlight; it is parented to camera now)
-
+  // (Flashlight stays with camera because it’s parented)
   renderer.render(scene, camera);
 }
 animate();
@@ -436,7 +419,7 @@ function getDesktopMove(dt) {
   if (moveKeys.right !== 0) desired.add(rightVec.clone().multiplyScalar(moveKeys.right));
 
   if (desired.lengthSq() > 0) {
-    desired.normalize().multiplyScalar(6 * dt); // speed
+    desired.normalize().multiplyScalar(6 * dt);
   }
   return desired;
 }
@@ -447,7 +430,7 @@ function getMobileMove(dt) {
   const yawRight = new THREE.Vector3(yawFwd.z, 0, -yawFwd.x);
 
   let desired = new THREE.Vector3();
-  desired.add(yawFwd.multiplyScalar(joyVec.y));   // UP (positive) = forward
+  desired.add(yawFwd.multiplyScalar(joyVec.y));   // UP = forward
   desired.add(yawRight.multiplyScalar(joyVec.x));
   desired.normalize().multiplyScalar(JOY_SPEED * dt);
   return desired;
@@ -459,19 +442,17 @@ function willCollide(nextPos) {
     const { min, max } = h.userData.aabb;
     const doorWidth = h.userData.doorWidth || 1.4;
 
-    // inside footprint?
     if (
       nextPos.x > min.x - 0.25 && nextPos.x < max.x + 0.25 &&
       nextPos.z > min.z - 0.25 && nextPos.z < max.z + 0.25
     ) {
-      // allow entry at front (+z) if within doorWidth centered on house x
       const doorXmin = h.position.x - doorWidth / 2;
       const doorXmax = h.position.x + doorWidth / 2;
-      const frontZ   = max.z; // front face
+      const frontZ   = max.z;
       if (nextPos.x > doorXmin && nextPos.x < doorXmax && nextPos.z > frontZ - 0.2) {
-        return false; // pass through the “door”
+        return false;
       }
-      return true; // blocked by walls
+      return true;
     }
   }
   return false;
