@@ -1,7 +1,7 @@
 /* global THREE */
 // ========= Walkable 3D Town — main_v7.js =========
 
-const VERSION = "v7";
+const VERSION = "v7.1";
 
 // ---------- DOM ----------
 const dbg   = document.getElementById("dbg");
@@ -14,25 +14,6 @@ const look  = document.getElementById("look-right");
 const btnJump  = document.getElementById("jump-btn");
 const btnNight = document.getElementById("night-btn");
 const btnFlash = document.getElementById("flash-btn");
-
-// helper so button taps don't bubble into look-right
-function eat(e){ e.preventDefault(); e.stopPropagation(); }
-
-function bindButton(el, handler){
-  if (!el) return;
-  el.addEventListener('touchstart', eat, {passive:false});
-  el.addEventListener('touchend',   eat, {passive:false});
-  el.addEventListener('click',      (e)=>{ eat(e); handler(); });
-}
-
-// visual toggle helpers
-function toggleClass(el, on){ if (!el) return; el.classList.toggle('active', !!on); }
-
-// wire up buttons
-bindButton(btnJump,  () => { if (onGround){ verticalVelocity = JUMP_SPEED; onGround = false; } });
-bindButton(btnNight, () => { toggleNight(); toggleClass(btnNight, nightMode); });
-bindButton(btnFlash, () => { toggleFlashlight(); toggleClass(btnFlash, flashlightOn); });
-
 
 // ---------- Device detection ----------
 const isCoarse = window.matchMedia && matchMedia("(pointer: coarse)").matches;
@@ -222,36 +203,6 @@ if (!isMobile) {
     if (ui) ui.style.display = "none";
     controls.lock();
   });
-
-  window.addEventListener("keydown", (e) => {
-    switch (e.code) {
-      case "ArrowUp":
-      case "KeyW": moveKeys.fwd = 1; break;
-      case "ArrowDown":
-      case "KeyS": moveKeys.fwd = -1; break;
-      case "ArrowLeft":
-      case "KeyA": moveKeys.right = -1; break;
-      case "ArrowRight":
-      case "KeyD": moveKeys.right = 1; break;
-      case "Space":
-        if (onGround) { verticalVelocity = JUMP_SPEED; onGround = false; }
-        break;
-      case "KeyN": toggleNight(); break;
-      case "KeyF": toggleFlashlight(); break;
-    }
-  });
-  window.addEventListener("keyup", (e) => {
-    switch (e.code) {
-      case "ArrowUp":
-      case "KeyW": if (moveKeys.fwd === 1)  moveKeys.fwd = 0; break;
-      case "ArrowDown":
-      case "KeyS": if (moveKeys.fwd === -1) moveKeys.fwd = 0; break;
-      case "ArrowLeft":
-      case "KeyA": if (moveKeys.right === -1) moveKeys.right = 0; break;
-      case "ArrowRight":
-      case "KeyD": if (moveKeys.right === 1)  moveKeys.right = 0; break;
-    }
-  });
 } else {
   // Mobile: yaw/pitch rig
   yaw   = new THREE.Object3D();
@@ -269,28 +220,39 @@ if (!isMobile) {
   }, { passive: true });
 }
 
+// ---------- Touch-safe button binding ----------
+function eat(e){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); }
+function bindButton(el, handler){
+  if (!el) return;
+  el.addEventListener('touchstart', eat, {passive:false});
+  el.addEventListener('touchend',   eat, {passive:false});
+  el.addEventListener('click',      (e)=>{ eat(e); handler(); });
+}
+function toggleClass(el, on){ if (!el) return; el.classList.toggle('active', !!on); }
+
+bindButton(btnJump,  () => { if (onGround){ verticalVelocity = JUMP_SPEED; onGround = false; } });
+bindButton(btnNight, () => { toggleNight(); toggleClass(btnNight, nightMode); });
+bindButton(btnFlash, () => { toggleFlashlight(); toggleClass(btnFlash, flashlightOn); });
+
 // ---------- Mobile Joystick + Look ----------
-const stickState = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
+const stickState = { active: false, startX: 0, startY: 0 };
 const lookState  = { active: false, lastX: 0, lastY: 0 };
-const JOY_RADIUS = 50;
 const JOY_MAX    = 36;         // clamp knob travel
 const JOY_SPEED  = 6.0;        // m/s when joystick fully deflected
 const LOOK_SENS  = 0.0025;     // swipe sensitivity
 const PITCH_CLAMP = Math.PI * 0.48;
-
 let joyVec = new THREE.Vector2(0, 0);
 
 function touchPos(ev) {
   const t = ev.touches ? ev.touches[0] : ev;
   return { x: t.clientX, y: t.clientY };
 }
-
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
 if (isMobile && stick && knob && look) {
   // movement stick
   const onStickStart = (e) => {
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     const p = touchPos(e);
     stickState.active = true;
     stickState.startX = p.x;
@@ -299,7 +261,7 @@ if (isMobile && stick && knob && look) {
   };
   const onStickMove = (e) => {
     if (!stickState.active) return;
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     const p = touchPos(e);
     const dx = p.x - stickState.startX;
     const dy = p.y - stickState.startY;
@@ -309,11 +271,10 @@ if (isMobile && stick && knob && look) {
     const kx = Math.cos(angle) * radius;
     const ky = Math.sin(angle) * radius;
     knob.style.transform = `translate(${kx}px, ${ky}px)`;
-    joyVec.set(kx / JOY_MAX, ky / JOY_MAX); // -1..1
-    joyVec.clampScalar(-1, 1);
+    joyVec.set(kx / JOY_MAX, ky / JOY_MAX).clampScalar(-1, 1);
   };
   const onStickEnd = (e) => {
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     stickState.active = false;
     knob.style.transform = `translate(0px,0px)`;
     joyVec.set(0, 0);
@@ -324,7 +285,7 @@ if (isMobile && stick && knob && look) {
 
   // look area
   const onLookStart = (e) => {
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     const p = touchPos(e);
     lookState.active = true;
     lookState.lastX  = p.x;
@@ -332,7 +293,7 @@ if (isMobile && stick && knob && look) {
   };
   const onLookMove = (e) => {
     if (!lookState.active) return;
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     const p = touchPos(e);
     const dx = p.x - lookState.lastX;
     const dy = p.y - lookState.lastY;
@@ -344,17 +305,12 @@ if (isMobile && stick && knob && look) {
     pitch.rotation.x  = clamp(pitch.rotation.x - dy * LOOK_SENS, -PITCH_CLAMP, PITCH_CLAMP);
   };
   const onLookEnd = (e) => {
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     lookState.active = false;
   };
   look.addEventListener("touchstart", onLookStart, { passive: false });
   look.addEventListener("touchmove",  onLookMove,  { passive: false });
   look.addEventListener("touchend",   onLookEnd,   { passive: false });
-
-  // mobile buttons
-  if (btnJump)  btnJump.addEventListener("click", () => { if (onGround) { verticalVelocity = JUMP_SPEED; onGround = false; } });
-  if (btnNight) btnNight.addEventListener("click", () => toggleNight());
-  if (btnFlash) btnFlash.addEventListener("click", () => toggleFlashlight());
 }
 
 // ---------- Collisions (AABB) with door opening ----------
@@ -390,7 +346,6 @@ function toggleNight() {
   hemi.intensity = nightMode ? 0.12 : (isMobile ? 0.45 : 0.6);
   sun.intensity  = nightMode ? 0.25 : (isMobile ? 0.55 : 0.85);
 }
-
 function toggleFlashlight() {
   flashlightOn = !flashlightOn;
   flash.intensity = flashlightOn ? 2.2 : 0;
@@ -411,9 +366,7 @@ function getDesktopMove(dt) {
   }
   return desired;
 }
-
 function getMobileMove(dt) {
-  // joyVec: x -> strafe, y -> forward (screen space)
   if (joyVec.lengthSq() === 0) return new THREE.Vector3();
 
   const yawFwd   = new THREE.Vector3(-Math.sin(yaw.rotation.y), 0, -Math.cos(yaw.rotation.y));
@@ -426,24 +379,28 @@ function getMobileMove(dt) {
   return desired;
 }
 
-// ---------- Desktop key handlers ----------
-if (!isMobile) {
-  window.addEventListener("keydown", (e) => {
+// ---------- Unified keyboard handlers (desktop toggles always work) ----------
+window.addEventListener("keydown", (e) => {
+  // Always allow N/F toggles; Space jump; prevent page scroll
+  if (e.code === "KeyN") { e.preventDefault(); toggleNight(); toggleClass(btnNight, nightMode); }
+  if (e.code === "KeyF") { e.preventDefault(); toggleFlashlight(); toggleClass(btnFlash, flashlightOn); }
+  if (e.code === "Space") { e.preventDefault(); if (onGround){ verticalVelocity = JUMP_SPEED; onGround = false; } }
+
+  if (!isMobile) {
     if (e.code === "ArrowUp" || e.code === "KeyW") moveKeys.fwd =  1;
     if (e.code === "ArrowDown" || e.code === "KeyS") moveKeys.fwd = -1;
     if (e.code === "ArrowLeft" || e.code === "KeyA") moveKeys.right = -1;
     if (e.code === "ArrowRight" || e.code === "KeyD") moveKeys.right = 1;
-    if (e.code === "Space" && onGround) { verticalVelocity = JUMP_SPEED; onGround = false; }
-    if (e.code === "KeyN") toggleNight();
-    if (e.code === "KeyF") toggleFlashlight();
-  });
-  window.addEventListener("keyup", (e) => {
+  }
+});
+window.addEventListener("keyup", (e) => {
+  if (!isMobile) {
     if ((e.code === "ArrowUp" || e.code === "KeyW") && moveKeys.fwd === 1)  moveKeys.fwd = 0;
     if ((e.code === "ArrowDown" || e.code === "KeyS") && moveKeys.fwd === -1) moveKeys.fwd = 0;
     if ((e.code === "ArrowLeft" || e.code === "KeyA") && moveKeys.right === -1) moveKeys.right = 0;
     if ((e.code === "ArrowRight" || e.code === "KeyD") && moveKeys.right === 1) moveKeys.right = 0;
-  });
-}
+  }
+});
 
 // ---------- Resize ----------
 window.addEventListener("resize", () => {
@@ -465,7 +422,6 @@ function animate() {
 
   // horizontal movement
   if (!isMobile) {
-    // require pointer lock to move
     const canMove = !!(document.pointerLockElement || document.mozPointerLockElement);
     if (canMove) {
       const desired = getDesktopMove(dt);
@@ -511,8 +467,3 @@ if (!isMobile) {
   yaw.position.set(0, 0, 10);
   pitch.rotation.x = 0;
 }
-
-// ---------- Public toggle bindings for desktop buttons (if any) ----------
-if (btnNight) btnNight.addEventListener("click", toggleNight);
-if (btnFlash) btnFlash.addEventListener("click", toggleFlashlight);
-if (btnJump)  btnJump .addEventListener("click", () => { if (onGround) { verticalVelocity = JUMP_SPEED; onGround = false; } });
