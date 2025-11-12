@@ -1,7 +1,7 @@
 /* global THREE */
 // ========= Walkable 3D Town — main_v7.js =========
 
-const VERSION = "v7.1";
+const VERSION = "v7.2";
 
 // ---------- DOM ----------
 const dbg   = document.getElementById("dbg");
@@ -220,19 +220,24 @@ if (!isMobile) {
   }, { passive: true });
 }
 
+// ---------- UI state helper ----------
+function updateUI() {
+  if (btnNight) btnNight.classList.toggle('active', nightMode);
+  if (btnFlash) btnFlash.classList.toggle('active', flashlightOn);
+}
+
 // ---------- Touch-safe button binding ----------
 function eat(e){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); }
 function bindButton(el, handler){
   if (!el) return;
-  el.addEventListener('touchstart', eat, {passive:false});
-  el.addEventListener('touchend',   eat, {passive:false});
+  el.addEventListener('touchstart', eat,            {passive:false});
+  el.addEventListener('touchend',   (e)=>{ eat(e); handler(); }, {passive:false});
   el.addEventListener('click',      (e)=>{ eat(e); handler(); });
 }
-function toggleClass(el, on){ if (!el) return; el.classList.toggle('active', !!on); }
 
 bindButton(btnJump,  () => { if (onGround){ verticalVelocity = JUMP_SPEED; onGround = false; } });
-bindButton(btnNight, () => { toggleNight(); toggleClass(btnNight, nightMode); });
-bindButton(btnFlash, () => { toggleFlashlight(); toggleClass(btnFlash, flashlightOn); });
+bindButton(btnNight, () => { nightMode = !nightMode; applyNight(); updateUI(); });
+bindButton(btnFlash, () => { flashlightOn = !flashlightOn; applyFlash(); updateUI(); });
 
 // ---------- Mobile Joystick + Look ----------
 const stickState = { active: false, startX: 0, startY: 0 };
@@ -283,7 +288,7 @@ if (isMobile && stick && knob && look) {
   stick.addEventListener("touchmove",  onStickMove,  { passive: false });
   stick.addEventListener("touchend",   onStickEnd,   { passive: false });
 
-  // look area
+  // look area (natural mapping)
   const onLookStart = (e) => {
     e.preventDefault(); e.stopPropagation();
     const p = touchPos(e);
@@ -300,9 +305,9 @@ if (isMobile && stick && knob && look) {
     lookState.lastX = p.x;
     lookState.lastY = p.y;
 
-    // apply yaw/pitch
-    yaw.rotation.y   -= dx * LOOK_SENS;
-    pitch.rotation.x  = clamp(pitch.rotation.x - dy * LOOK_SENS, -PITCH_CLAMP, PITCH_CLAMP);
+    // Natural feel: swipe RIGHT -> look RIGHT; swipe UP -> look UP
+    yaw.rotation.y   += dx * LOOK_SENS;
+    pitch.rotation.x  = clamp(pitch.rotation.x + (-dy) * LOOK_SENS, -PITCH_CLAMP, PITCH_CLAMP);
   };
   const onLookEnd = (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -313,77 +318,23 @@ if (isMobile && stick && knob && look) {
   look.addEventListener("touchend",   onLookEnd,   { passive: false });
 }
 
-// ---------- Collisions (AABB) with door opening ----------
-function willCollide(nextPos) {
-  for (const h of houses) {
-    const { min, max } = h.userData.aabb;
-    const doorWidth = h.userData.doorWidth || 1.4;
-
-    // inside footprint?
-    if (
-      nextPos.x > min.x - 0.25 && nextPos.x < max.x + 0.25 &&
-      nextPos.z > min.z - 0.25 && nextPos.z < max.z + 0.25
-    ) {
-      // allow entry at front (+z) if within doorWidth centered on house x
-      const doorXmin = h.position.x - doorWidth / 2;
-      const doorXmax = h.position.x + doorWidth / 2;
-      const frontZ   = max.z; // front face
-      if (nextPos.x > doorXmin && nextPos.x < doorXmax && nextPos.z > frontZ - 0.2) {
-        return false; // pass through the “door”
-      }
-      return true; // blocked by walls
-    }
-  }
-  return false;
-}
-
-// ---------- Night / Flashlight ----------
-function toggleNight() {
-  nightMode = !nightMode;
+// ---------- Night / Flashlight (apply) ----------
+function applyNight() {
   skyMat.color.setHex(nightMode ? SKY_NIGHT : SKY_DAY);
   groundMat.color.setHex(nightMode ? GROUND_NIGHT : GROUND_DAY);
   waterMat.color.setHex(nightMode ? WATER_NIGHT : WATER_DAY);
   hemi.intensity = nightMode ? 0.12 : (isMobile ? 0.45 : 0.6);
   sun.intensity  = nightMode ? 0.25 : (isMobile ? 0.55 : 0.85);
 }
-function toggleFlashlight() {
-  flashlightOn = !flashlightOn;
+function applyFlash() {
   flash.intensity = flashlightOn ? 2.2 : 0;
 }
 
-// ---------- Movement helpers ----------
-function getDesktopMove(dt) {
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir); dir.y = 0; dir.normalize();
-  const rightVec = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0,1,0)).normalize().multiplyScalar(-1);
-
-  let desired = new THREE.Vector3();
-  if (moveKeys.fwd !== 0)   desired.add(dir.clone().multiplyScalar(moveKeys.fwd));
-  if (moveKeys.right !== 0) desired.add(rightVec.clone().multiplyScalar(moveKeys.right));
-
-  if (desired.lengthSq() > 0) {
-    desired.normalize().multiplyScalar(6 * dt); // speed
-  }
-  return desired;
-}
-function getMobileMove(dt) {
-  if (joyVec.lengthSq() === 0) return new THREE.Vector3();
-
-  const yawFwd   = new THREE.Vector3(-Math.sin(yaw.rotation.y), 0, -Math.cos(yaw.rotation.y));
-  const yawRight = new THREE.Vector3(yawFwd.z, 0, -yawFwd.x);
-
-  let desired = new THREE.Vector3();
-  desired.add(yawFwd.multiplyScalar(joyVec.y));
-  desired.add(yawRight.multiplyScalar(joyVec.x));
-  desired.normalize().multiplyScalar(JOY_SPEED * dt);
-  return desired;
-}
-
-// ---------- Unified keyboard handlers (desktop toggles always work) ----------
+// ---------- Keyboard (desktop + mobile external keyboards) ----------
 window.addEventListener("keydown", (e) => {
-  // Always allow N/F toggles; Space jump; prevent page scroll
-  if (e.code === "KeyN") { e.preventDefault(); toggleNight(); toggleClass(btnNight, nightMode); }
-  if (e.code === "KeyF") { e.preventDefault(); toggleFlashlight(); toggleClass(btnFlash, flashlightOn); }
+  // Toggle keys always work
+  if (e.code === "KeyN") { e.preventDefault(); nightMode = !nightMode; applyNight(); updateUI(); }
+  if (e.code === "KeyF") { e.preventDefault(); flashlightOn = !flashlightOn; applyFlash(); updateUI(); }
   if (e.code === "Space") { e.preventDefault(); if (onGround){ verticalVelocity = JUMP_SPEED; onGround = false; } }
 
   if (!isMobile) {
@@ -459,6 +410,58 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+
+// ---------- Movement helpers ----------
+function getDesktopMove(dt) {
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir); dir.y = 0; dir.normalize();
+  const rightVec = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0,1,0)).normalize().multiplyScalar(-1);
+
+  let desired = new THREE.Vector3();
+  if (moveKeys.fwd !== 0)   desired.add(dir.clone().multiplyScalar(moveKeys.fwd));
+  if (moveKeys.right !== 0) desired.add(rightVec.clone().multiplyScalar(moveKeys.right));
+
+  if (desired.lengthSq() > 0) {
+    desired.normalize().multiplyScalar(6 * dt); // speed
+  }
+  return desired;
+}
+function getMobileMove(dt) {
+  if (joyVec.lengthSq() === 0) return new THREE.Vector3();
+
+  const yawFwd   = new THREE.Vector3(-Math.sin(yaw.rotation.y), 0, -Math.cos(yaw.rotation.y));
+  const yawRight = new THREE.Vector3(yawFwd.z, 0, -yawFwd.x);
+
+  let desired = new THREE.Vector3();
+  desired.add(yawFwd.multiplyScalar(joyVec.y));
+  desired.add(yawRight.multiplyScalar(joyVec.x));
+  desired.normalize().multiplyScalar(JOY_SPEED * dt);
+  return desired;
+}
+
+// ---------- Collisions (AABB) with door opening ----------
+function willCollide(nextPos) {
+  for (const h of houses) {
+    const { min, max } = h.userData.aabb;
+    const doorWidth = h.userData.doorWidth || 1.4;
+
+    // inside footprint?
+    if (
+      nextPos.x > min.x - 0.25 && nextPos.x < max.x + 0.25 &&
+      nextPos.z > min.z - 0.25 && nextPos.z < max.z + 0.25
+    ) {
+      // allow entry at front (+z) if within doorWidth centered on house x
+      const doorXmin = h.position.x - doorWidth / 2;
+      const doorXmax = h.position.x + doorWidth / 2;
+      const frontZ   = max.z; // front face
+      if (nextPos.x > doorXmin && nextPos.x < doorXmax && nextPos.z > frontZ - 0.2) {
+        return false; // pass through the “door”
+      }
+      return true; // blocked by walls
+    }
+  }
+  return false;
+}
 
 // ---------- Init camera position ----------
 if (!isMobile) {
