@@ -2,38 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  />
   <title>Walkable 3D Town – Root&Render</title>
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
-  <div id="ui" class="overlay" role="dialog">
+  <div id="ui" class="overlay" role="dialog" aria-live="polite">
     <h1>Walkable 3D Town</h1>
     <p>
       Desktop: Click to start • Arrow keys move • Space jumps • N toggles night • F toggles flashlight<br>
-      Mobile: Tap to start • Left pad moves • Right pad looks • Jump/Night/Light buttons below
+      Mobile: Tap to start • Left pad moves • Right pad looks • Jump/Night/Light buttons on right
     </p>
   </div>
 
- <!-- Touch controls -->
-<div id="touch-ui" aria-hidden="true">
-  <div id="stick-left"><div class="knob"></div></div>
-  <div id="look-right"></div>
+  <!-- Touch controls -->
+  <div id="touch-ui" aria-hidden="true">
+    <div id="stick-left"><div class="knob"></div></div>
+    <div id="look-right"></div>
 
-  <!-- NEW: buttons stacked on the right -->
-  <div id="mobile-buttons">
-    <button id="jump-btn"  class="mobile-btn">Jump</button>
-    <button id="night-btn" class="mobile-btn">Night</button>
-    <button id="flash-btn" class="mobile-btn">Light</button>
+    <!-- Buttons stacked on the right -->
+    <div id="mobile-buttons">
+      <button id="jump-btn"  class="mobile-btn" aria-label="Jump">Jump</button>
+      <button id="night-btn" class="mobile-btn" aria-label="Night mode">Night</button>
+      <button id="flash-btn" class="mobile-btn" aria-label="Flashlight">Light</button>
+    </div>
   </div>
-</div>
 
-  <div id="dbg">mode: ? • v7</div>
+  <div id="dbg">mode: ? • v7.1</div>
   <canvas id="scene"></canvas>
 
+  <!-- libs -->
   <script src="libs/three.min.js"></script>
-<script src="libs/PointerLockControls.js"></script>
-  <script src="main_v7.js?v=7"></script>
-</body>
+  <script src="libs/PointerLockControls.js"></script>
 
+  <!-- app -->
+  <script src="main_v7.js?v=7.1"></script>
+</body>
 </html>
