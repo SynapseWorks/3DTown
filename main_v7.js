@@ -1,7 +1,7 @@
 /* global THREE */
 // ========= Walkable 3D Town — main_v7.js =========
 
-const VERSION = "v7.4";
+const VERSION = "v7.5";
 
 // --- debug badge catches any runtime error so builders don’t fail silently ---
 const dbg = document.getElementById("dbg");
@@ -40,7 +40,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 // ---------- Day/Night palette ----------
 let nightMode    = false;
 let flashlightOn = false;
-const SKY_DAY      = 0xcfefff;
+const SKY_DAY      = 0+cfefff;
 const SKY_NIGHT    = 0x050b14;
 const GROUND_DAY   = 0x87b86a;
 const GROUND_NIGHT = 0x1c3a33;
@@ -86,13 +86,14 @@ if (!isMobile) {
 }
 scene.add(sun);
 
-// Flashlight (attached to camera) — brighter & longer for mobile clarity
+// Flashlight — ATTACHED TO CAMERA so it always follows view
 const flash = new THREE.SpotLight(0xffffff, 0, 28, Math.PI / 6, 0.5, 1.4);
-flash.position.set(0, 0, 0);
-flash.target.position.set(0, 0, -1);
-flash.castShadow = false;
-scene.add(flash);
-scene.add(flash.target);
+const flashTarget = new THREE.Object3D();
+flashTarget.position.set(0, 0, -5); // 5 units forward from camera
+camera.add(flash);
+camera.add(flashTarget);
+flash.target = flashTarget;
+// (Don’t add flash directly to scene; it inherits via camera’s scene membership)
 
 // ---------- Town Builders ----------
 const HOUSE_Y = 0; // ground
@@ -171,7 +172,7 @@ function makePath(x, z, w, d) {
   scene.add(m);
 }
 
-// Build a small town (wrapped in try so any error shows in dbg)
+// Build a small town
 try {
   makeHouse({ x: 10,  z: -5,  color: 0xd8e2dc });
   makeHouse({ x: -8,  z: -12, color: 0xffe5d9 });
@@ -344,7 +345,7 @@ function applyNight() {
   sun.intensity  = nightMode ? 0.25 : (isMobile ? 0.55 : 0.85);
 }
 function applyFlash() {
-  flash.intensity = flashlightOn ? 2.2 : 0; // brighter cone+distance already set
+  flash.intensity = flashlightOn ? 2.2 : 0;
 }
 
 // ---------- Keyboard (desktop + mobile external keyboards) ----------
@@ -418,11 +419,7 @@ function animate() {
     playerObject.position.y = newY;
   }
 
-  // flashlight follows camera
-  flash.position.copy(camera.position);
-  const lookDir = new THREE.Vector3();
-  camera.getWorldDirection(lookDir);
-  flash.target.position.copy(camera.position.clone().add(lookDir.multiplyScalar(6)));
+  // (No need to manually update flashlight; it is parented to camera now)
 
   renderer.render(scene, camera);
 }
