@@ -14,18 +14,18 @@ html, body {
   background: rgba(255,255,255,.92);
   padding: .75rem 1rem; border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0,0,0,.15);
-  z-index: 10; user-select: none;
+  z-index: 40; user-select: none;
 }
 
 /* Debug badge */
 #dbg {
-  position: absolute; right: .5rem; top: .5rem; z-index: 30;
+  position: absolute; right: .5rem; top: .5rem; z-index: 60;
   background: rgba(0,0,0,.55); color: #fff; font-size: 12px;
   padding: .25rem .5rem; border-radius: 6px; user-select: none;
 }
 
 /* Touch UI container never grabs events; children do */
-#touch-ui { position: fixed; inset: 0; pointer-events: none; z-index: 20; }
+#touch-ui { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 
 /* LEFT stick */
 #stick-left {
@@ -46,27 +46,28 @@ html, body {
 
 /* RIGHT look pad — shifted left to leave room for buttons */
 #look-right {
-  position: absolute; right: 6.5rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  position: absolute; right: 8.5rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
   width: 42vw; max-width: 260px; height: 42vw; max-height: 260px;
   border-radius: 18px;
   background: radial-gradient(closest-side, rgba(255,255,255,.12), rgba(255,255,255,.04));
   backdrop-filter: blur(6px);
   pointer-events: auto; /* enable touches */
   touch-action: none;
+  z-index: 51;
 }
 
 /* Buttons column on far right, above look pad */
 #mobile-buttons {
   position: absolute; right: 1rem; bottom: calc(env(safe-area-inset-bottom) + 1rem);
   display: flex; flex-direction: column; gap: .75rem;
-  pointer-events: auto; z-index: 25;
+  pointer-events: auto; z-index: 55;
 }
 
 /* Button styling */
 .mobile-btn {
   width: 56px; height: 56px; border-radius: 999px; border: none;
   font: 700 12px/1 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue";
-  color: #1b1b1b; background: rgba(255,255,255,.85);
+  color: #1b1b1b; background: rgba(255,255,255,.90);
   box-shadow: 0 6px 16px rgba(0,0,0,.25);
   touch-action: manipulation;
 }
@@ -76,4 +77,9 @@ html, body {
 /* Hide touch UI on desktop */
 @media (hover: hover) and (pointer: fine) {
   #touch-ui { display: none; }
+}
+
+/* On very narrow phones, nudge look pad further left */
+@media (max-width: 360px) {
+  #look-right { right: 9.5rem; }
 }
