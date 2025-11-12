@@ -1,7 +1,7 @@
 /* global THREE */
 // ========= Walkable 3D Town — main_v7.js =========
 
-const VERSION = "v7.2";
+const VERSION = "v7.3";
 
 // ---------- DOM ----------
 const dbg   = document.getElementById("dbg");
@@ -165,20 +165,6 @@ function makePath(x, z, w, d) {
   scene.add(m);
 }
 
-// Build a small town
-makeHouse({ x: 10,  z: -5,  color: 0xd8e2dc });
-makeHouse({ x: -8,  z: -12, color: 0xffe5d9 });
-makeHouse({ x: -14, z:  8,  color: 0xcdeac0 });
-makeHouse({ x: 8,   z:  12, color: 0xa3cef1 });
-
-for (let i = 0; i < 12; i++) {
-  makeTree(-18 + Math.random() * 36, -18 + Math.random() * 36);
-}
-
-makePath(0, -2, 28, 4);
-makePath(-10, 8, 16, 3);
-makePath(9, 8, 16, 3);
-
 // ---------- Player Rig & Controls ----------
 let controls;      // desktop pointer lock
 let yaw, pitch;    // mobile rig
@@ -209,7 +195,7 @@ if (!isMobile) {
   pitch = new THREE.Object3D();
   yaw.add(pitch);
   pitch.add(camera);
-  camera.position.set(0, EYE_HEIGHT, 0);
+  camera.position.set(0, EYE_HEIGHT, 0); // eye height is camera's local Y
   playerObject = yaw;
   scene.add(yaw);
 
@@ -276,7 +262,8 @@ if (isMobile && stick && knob && look) {
     const kx = Math.cos(angle) * radius;
     const ky = Math.sin(angle) * radius;
     knob.style.transform = `translate(${kx}px, ${ky}px)`;
-    joyVec.set(kx / JOY_MAX, ky / JOY_MAX).clampScalar(-1, 1);
+    // Invert Y so UP = forward, DOWN = backward
+    joyVec.set(kx / JOY_MAX, -ky / JOY_MAX).clampScalar(-1, 1);
   };
   const onStickEnd = (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -288,7 +275,7 @@ if (isMobile && stick && knob && look) {
   stick.addEventListener("touchmove",  onStickMove,  { passive: false });
   stick.addEventListener("touchend",   onStickEnd,   { passive: false });
 
-  // look area (natural mapping)
+  // look area (natural mapping: right->right, up->up)
   const onLookStart = (e) => {
     e.preventDefault(); e.stopPropagation();
     const p = touchPos(e);
@@ -305,7 +292,6 @@ if (isMobile && stick && knob && look) {
     lookState.lastX = p.x;
     lookState.lastY = p.y;
 
-    // Natural feel: swipe RIGHT -> look RIGHT; swipe UP -> look UP
     yaw.rotation.y   += dx * LOOK_SENS;
     pitch.rotation.x  = clamp(pitch.rotation.x + (-dy) * LOOK_SENS, -PITCH_CLAMP, PITCH_CLAMP);
   };
@@ -332,7 +318,6 @@ function applyFlash() {
 
 // ---------- Keyboard (desktop + mobile external keyboards) ----------
 window.addEventListener("keydown", (e) => {
-  // Toggle keys always work
   if (e.code === "KeyN") { e.preventDefault(); nightMode = !nightMode; applyNight(); updateUI(); }
   if (e.code === "KeyF") { e.preventDefault(); flashlightOn = !flashlightOn; applyFlash(); updateUI(); }
   if (e.code === "Space") { e.preventDefault(); if (onGround){ verticalVelocity = JUMP_SPEED; onGround = false; } }
@@ -389,12 +374,13 @@ function animate() {
     }
   }
 
-  // vertical (jump/gravity)
+  // vertical (jump/gravity) — DIFFERENT FLOORS for desktop vs mobile
+  const floorY = isMobile ? 0 : EYE_HEIGHT;     // mobile rig sits at y=0; desktop object equals eye height
   if (!onGround || verticalVelocity > 0) {
     verticalVelocity -= GRAVITY * dt;
     let newY = playerObject.position.y + verticalVelocity * dt;
-    if (newY <= EYE_HEIGHT) {
-      newY = EYE_HEIGHT;
+    if (newY <= floorY) {
+      newY = floorY;
       verticalVelocity = 0;
       onGround = true;
     }
@@ -433,7 +419,7 @@ function getMobileMove(dt) {
   const yawRight = new THREE.Vector3(yawFwd.z, 0, -yawFwd.x);
 
   let desired = new THREE.Vector3();
-  desired.add(yawFwd.multiplyScalar(joyVec.y));
+  desired.add(yawFwd.multiplyScalar(joyVec.y));   // now UP (positive) = forward
   desired.add(yawRight.multiplyScalar(joyVec.x));
   desired.normalize().multiplyScalar(JOY_SPEED * dt);
   return desired;
@@ -467,6 +453,6 @@ function willCollide(nextPos) {
 if (!isMobile) {
   camera.position.set(0, EYE_HEIGHT, 10);
 } else {
-  yaw.position.set(0, 0, 10);
-  pitch.rotation.x = 0;
+  yaw.position.set(0, 0, 10);      // rig at ground
+  pitch.rotation.x = 0;            // camera has local 1.6m height
 }
