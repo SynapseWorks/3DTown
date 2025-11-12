@@ -1,10 +1,15 @@
 /* global THREE */
 // ========= Walkable 3D Town — main_v7.js =========
 
-const VERSION = "v7.3";
+const VERSION = "v7.4";
+
+// --- debug badge catches any runtime error so builders don’t fail silently ---
+const dbg = document.getElementById("dbg");
+window.addEventListener("error", (e) => {
+  if (dbg) dbg.textContent = `ERR: ${String(e.message || e).slice(0, 80)}`;
+});
 
 // ---------- DOM ----------
-const dbg   = document.getElementById("dbg");
 const ui    = document.getElementById("ui");
 const touch = document.getElementById("touch-ui");
 const stick = document.getElementById("stick-left");
@@ -81,10 +86,11 @@ if (!isMobile) {
 }
 scene.add(sun);
 
-// Flashlight (attached to camera)
-const flash = new THREE.SpotLight(0xffffff, 0, 15, Math.PI / 7, 0.5, 1.2);
+// Flashlight (attached to camera) — brighter & longer for mobile clarity
+const flash = new THREE.SpotLight(0xffffff, 0, 28, Math.PI / 6, 0.5, 1.4);
 flash.position.set(0, 0, 0);
 flash.target.position.set(0, 0, -1);
+flash.castShadow = false;
 scene.add(flash);
 scene.add(flash.target);
 
@@ -97,46 +103,47 @@ function makeHouse({ x, z, w = 4, d = 4, h = 2.6, color = 0xe5d3b3, roofColor = 
   g.position.set(x, HOUSE_Y, z);
 
   // Body
-  const bodyGeo = new THREE.BoxGeometry(w, h, d);
-  const bodyMat = new THREE.MeshStandardMaterial({ color });
-  const body    = new THREE.Mesh(bodyGeo, bodyMat);
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ color })
+  );
   body.castShadow = !isMobile;
   body.receiveShadow = true;
   body.position.y = h / 2;
   g.add(body);
 
   // Roof
-  const roofGeo = new THREE.ConeGeometry(Math.max(w, d) * 0.75, Math.max(h * 0.8, 2), 4);
-  const roofMat = new THREE.MeshStandardMaterial({ color: roofColor });
-  const roof    = new THREE.Mesh(roofGeo, roofMat);
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(Math.max(w, d) * 0.75, Math.max(h * 0.8, 2), 4),
+    new THREE.MeshStandardMaterial({ color: roofColor })
+  );
   roof.castShadow = !isMobile;
   roof.position.y = h + 0.7;
   roof.rotation.y = Math.PI * 0.25;
   g.add(roof);
 
   // Door indicator (front = +z face)
-  const doorGeo = new THREE.PlaneGeometry(1.6, 2.0);
-  const doorMat = new THREE.MeshBasicMaterial({ color: 0x6b4f3a });
-  const door    = new THREE.Mesh(doorGeo, doorMat);
+  const door = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.6, 2.0),
+    new THREE.MeshStandardMaterial({ color: 0x6b4f3a })
+  );
   door.position.set(0, 1.0, d / 2 + 0.01);
   g.add(door);
 
-  // Store AABB footprint + door width
+  // Footprint AABB + door width
   g.userData.aabb = {
     min: new THREE.Vector3(x - w / 2, 0, z - d / 2),
     max: new THREE.Vector3(x + w / 2, 0, z + d / 2)
   };
   g.userData.doorWidth = 1.6; // centered on +z
-  g.userData.depth     = d;
 
   scene.add(g);
   houses.push(g);
 }
 
-// Trees
 function makeTree(x, z) {
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.25, 0.35, 2, 8),
+    new THREE.CylinderGeometry(0.25, 0.35, 2, 10),
     new THREE.MeshStandardMaterial({ color: 0x8b5a2b })
   );
   trunk.position.set(x, 1, z);
@@ -145,7 +152,7 @@ function makeTree(x, z) {
   scene.add(trunk);
 
   const crown = new THREE.Mesh(
-    new THREE.ConeGeometry(1.2, 2.2, 10),
+    new THREE.ConeGeometry(1.2, 2.2, 12),
     new THREE.MeshStandardMaterial({ color: 0x2f7d32 })
   );
   crown.position.set(x, 2.6, z);
@@ -153,7 +160,6 @@ function makeTree(x, z) {
   scene.add(crown);
 }
 
-// Paths
 function makePath(x, z, w, d) {
   const m = new THREE.Mesh(
     new THREE.PlaneGeometry(w, d),
@@ -163,6 +169,24 @@ function makePath(x, z, w, d) {
   m.position.set(x, 0.001, z);
   m.receiveShadow = true;
   scene.add(m);
+}
+
+// Build a small town (wrapped in try so any error shows in dbg)
+try {
+  makeHouse({ x: 10,  z: -5,  color: 0xd8e2dc });
+  makeHouse({ x: -8,  z: -12, color: 0xffe5d9 });
+  makeHouse({ x: -14, z:  8,  color: 0xcdeac0 });
+  makeHouse({ x: 8,   z:  12, color: 0xa3cef1 });
+
+  for (let i = 0; i < 14; i++) {
+    makeTree(-18 + Math.random() * 36, -18 + Math.random() * 36);
+  }
+
+  makePath(0, -2, 28, 4);
+  makePath(-10, 8, 16, 3);
+  makePath(9, 8, 16, 3);
+} catch (err) {
+  if (dbg) dbg.textContent = `ERR(build): ${String(err.message || err).slice(0, 80)}`;
 }
 
 // ---------- Player Rig & Controls ----------
@@ -183,7 +207,10 @@ if (!isMobile) {
   controls = new THREE.PointerLockControls(camera, document.body);
   scene.add(controls.getObject());
   playerObject = controls.getObject();
-  playerObject.position.set(0, EYE_HEIGHT, 10);
+
+  // Start a little farther back and look toward town center
+  playerObject.position.set(0, EYE_HEIGHT, 18);
+  camera.lookAt(0, EYE_HEIGHT, 0);
 
   document.body.addEventListener("click", () => {
     if (ui) ui.style.display = "none";
@@ -198,6 +225,10 @@ if (!isMobile) {
   camera.position.set(0, EYE_HEIGHT, 0); // eye height is camera's local Y
   playerObject = yaw;
   scene.add(yaw);
+
+  // Start a little farther back and face toward town center
+  yaw.position.set(0, 0, 18);
+  yaw.lookAt(new THREE.Vector3(0, 0, 0));
 
   // Tap to start HUD
   document.body.addEventListener("click", () => {
@@ -313,7 +344,7 @@ function applyNight() {
   sun.intensity  = nightMode ? 0.25 : (isMobile ? 0.55 : 0.85);
 }
 function applyFlash() {
-  flash.intensity = flashlightOn ? 2.2 : 0;
+  flash.intensity = flashlightOn ? 2.2 : 0; // brighter cone+distance already set
 }
 
 // ---------- Keyboard (desktop + mobile external keyboards) ----------
@@ -374,8 +405,8 @@ function animate() {
     }
   }
 
-  // vertical (jump/gravity) — DIFFERENT FLOORS for desktop vs mobile
-  const floorY = isMobile ? 0 : EYE_HEIGHT;     // mobile rig sits at y=0; desktop object equals eye height
+  // vertical (jump/gravity) — separate floors
+  const floorY = isMobile ? 0 : EYE_HEIGHT; // mobile rig sits at y=0; desktop object equals eye height
   if (!onGround || verticalVelocity > 0) {
     verticalVelocity -= GRAVITY * dt;
     let newY = playerObject.position.y + verticalVelocity * dt;
@@ -391,7 +422,7 @@ function animate() {
   flash.position.copy(camera.position);
   const lookDir = new THREE.Vector3();
   camera.getWorldDirection(lookDir);
-  flash.target.position.copy(camera.position.clone().add(lookDir.multiplyScalar(5)));
+  flash.target.position.copy(camera.position.clone().add(lookDir.multiplyScalar(6)));
 
   renderer.render(scene, camera);
 }
@@ -419,7 +450,7 @@ function getMobileMove(dt) {
   const yawRight = new THREE.Vector3(yawFwd.z, 0, -yawFwd.x);
 
   let desired = new THREE.Vector3();
-  desired.add(yawFwd.multiplyScalar(joyVec.y));   // now UP (positive) = forward
+  desired.add(yawFwd.multiplyScalar(joyVec.y));   // UP (positive) = forward
   desired.add(yawRight.multiplyScalar(joyVec.x));
   desired.normalize().multiplyScalar(JOY_SPEED * dt);
   return desired;
@@ -447,12 +478,4 @@ function willCollide(nextPos) {
     }
   }
   return false;
-}
-
-// ---------- Init camera position ----------
-if (!isMobile) {
-  camera.position.set(0, EYE_HEIGHT, 10);
-} else {
-  yaw.position.set(0, 0, 10);      // rig at ground
-  pitch.rotation.x = 0;            // camera has local 1.6m height
 }
